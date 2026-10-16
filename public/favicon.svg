@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Elytra">
+  <rect width="32" height="32" rx="7" fill="#07140C"/>
+  <path d="M15.2 10c-4.4 1.5-6.8 5.8-6.2 10.8.5 3.8 2.9 6 6.2 5.8V10z" fill="#8ED45C"/>
+  <path d="M16.8 10c4.4 1.5 6.8 5.8 6.2 10.8-.5 3.8-2.9 6-6.2 5.8V10z" fill="#B6F27A"/>
+  <path d="M16 10.4v14.6" stroke="#07140C" stroke-width="1.15" stroke-linecap="round"/>
+  <circle cx="16" cy="9.1" r="3.15" fill="#E4B15A"/>
+  <path d="M13.4 6.6c-.4-1.5-1.8-2.4-2.8-1.8M18.6 6.6c.4-1.5 1.8-2.4 2.8-1.8" fill="none" stroke="#E4B15A" stroke-width="1.15" stroke-linecap="round"/>
+  <circle cx="16" cy="26.2" r="1.35" fill="#E25B45"/>
+</svg>
