@@ -15,6 +15,7 @@ import {
   type PickupKind,
   type Player,
   type Pulse,
+  type Ring,
   type Shot,
   type Spawn,
   type Tone,
@@ -72,6 +73,8 @@ interface Probe {
   getMode: () => Mode;
   getScore: () => number;
   getFriendlyShots: () => number;
+  getQuality: () => number;
+  setQuality: (q: 0 | 1 | 2) => void;
 }
 
 declare global {
@@ -152,6 +155,11 @@ export class MicroGame {
   private scroll = 0;
   private shake = 0;
   private flash = 0;
+  private hurtFlash = 0;
+  private quality: 0 | 1 | 2 = 2;
+  private slowT = 0;
+  private qualityLocked = false;
+  private frameEma = 16.7;
   private hitstop = 0;
   private mode: Mode = "title";
   private paused = false;
@@ -199,6 +207,7 @@ export class MicroGame {
   private floaters: Floater[] = [];
   private pickups: Pickup[] = [];
   private pulses: Pulse[] = [];
+  private rings: Ring[] = [];
   private leaves: Leaf[] = [];
   private motes: Mote[] = [];
 
@@ -251,12 +260,14 @@ export class MicroGame {
     this.floaters.length = 0;
     this.pickups.length = 0;
     this.pulses.length = 0;
+    this.rings.length = 0;
     this.player.hp = this.player.maxHp;
     this.player.alive = true;
     this.player.invuln = 1.35;
     this.player.x = this.w / 2;
     this.player.y = this.band().max;
     this.player.bank = 0;
+    this.snapshotPrev();
     this.beginWave();
     this.hudDirty = true;
   }
@@ -296,6 +307,12 @@ export class MicroGame {
     getMode: () => this.mode,
     getScore: () => this.score,
     getFriendlyShots: () => this.shots.filter((s) => s.friendly && s.life > 0).length,
+    getQuality: () => this.quality,
+    setQuality: (q) => {
+      this.quality = q;
+      this.slowT = 0;
+      this.qualityLocked = true;
+    },
   };
 
   private attachProbe() {
@@ -409,6 +426,7 @@ export class MicroGame {
     this.h = h;
     this.seedGarden();
     this.clampPlayer();
+    this.snapshotPrev();
   };
 
   private seedGarden() {
@@ -446,8 +464,10 @@ export class MicroGame {
   private frame = (now: number) => {
     if (this.dead) return;
     if (!this.last) this.last = now;
-    const dt = Math.min(0.05, (now - this.last) / 1000);
+    const rawMs = now - this.last;
+    const dt = Math.min(0.05, rawMs / 1000);
     this.last = now;
+    this.trackQuality(rawMs);
     this.acc += dt;
     let steps = 0;
     while (this.acc >= STEP && steps < 5) {
@@ -460,11 +480,47 @@ export class MicroGame {
     this.raf = requestAnimationFrame(this.frame);
   };
 
+  /**
+   * Si el equipo no sostiene ~45 fps durante un rato, baja un nivel de calidad
+   * visual (menos partículas y capas decorativas). Solo baja, para no oscilar.
+   */
+  private trackQuality(rawMs: number) {
+    if (this.qualityLocked || rawMs <= 0 || rawMs > 120) return;
+    this.frameEma = this.frameEma * 0.94 + rawMs * 0.06;
+    if (this.frameEma > 24 && this.quality > 0 && document.visibilityState === "visible") {
+      this.slowT += rawMs / 1000;
+      if (this.slowT > 1.6) {
+        this.quality = (this.quality - 1) as 0 | 1 | 2;
+        this.slowT = 0;
+        this.frameEma = 16.7;
+      }
+    } else if (this.slowT > 0) {
+      this.slowT = Math.max(0, this.slowT - rawMs / 500);
+    }
+  }
+
+  /** Guarda la posición previa para interpolar el dibujo entre pasos fijos. */
+  private snapshotPrev() {
+    const p = this.player;
+    p.px = p.x;
+    p.py = p.y;
+    for (const e of this.enemies) {
+      e.px = e.x;
+      e.py = e.y;
+    }
+    for (const s of this.shots) {
+      s.px = s.x;
+      s.py = s.y;
+    }
+  }
+
   private step(dt: number) {
+    this.snapshotPrev();
     this.time += dt;
     this.scroll += dt * (this.queenAlive ? 28 : 18);
     if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 14);
     if (this.flash > 0) this.flash = Math.max(0, this.flash - dt);
+    if (this.hurtFlash > 0) this.hurtFlash = Math.max(0, this.hurtFlash - dt * 2.2);
     if (this.bannerT > 0) this.bannerT -= dt;
 
     const playing = this.mode === "playing" && !this.paused;
@@ -916,6 +972,7 @@ export class MicroGame {
   private damageEnemy(enemy: Enemy, amount: number) {
     if (enemy.dead) return;
     enemy.hp -= amount;
+    enemy.hit = 1;
     this.bits.push({
       x: enemy.x,
       y: enemy.y,
@@ -933,7 +990,15 @@ export class MicroGame {
   private kill(enemy: Enemy) {
     enemy.dead = true;
     const big = enemy.kind === "queen";
-    this.burst(enemy.x, enemy.y, big ? 26 : 10, big ? "gold" : "leaf");
+    this.burst(enemy.x, enemy.y, big ? 30 : 12, big ? "gold" : "leaf");
+    this.rings.push({
+      x: enemy.x,
+      y: enemy.y,
+      life: big ? 0.7 : 0.38,
+      max: big ? 0.7 : 0.38,
+      size: big ? 120 : enemy.r * 2.4,
+      tone: big ? "gold" : "leaf",
+    });
     this.audio.explode(big);
     if (this.comboT > 0) this.combo += 1;
     else this.combo = 1;
@@ -1008,7 +1073,9 @@ export class MicroGame {
     this.player.invuln = 1.05;
     this.shake = Math.max(this.shake, 6);
     this.hitstop = 0.045;
-    this.flash = 0.12;
+    this.hurtFlash = 1;
+    this.rings.push({ x: this.player.x, y: this.player.y, life: 0.4, max: 0.4, size: 46, tone: "sting" });
+    this.burst(this.player.x, this.player.y, 8, "sting");
     this.audio.hurt();
     this.combo = 0;
     this.comboT = 0;
@@ -1068,6 +1135,11 @@ export class MicroGame {
       floater.life -= dt;
     }
     this.compact(this.floaters);
+    for (const ring of this.rings) ring.life -= dt;
+    this.compact(this.rings);
+    for (const enemy of this.enemies) {
+      if (enemy.hit && enemy.hit > 0) enemy.hit = Math.max(0, enemy.hit - dt * 7);
+    }
     for (const pulse of this.pulses) pulse.life -= dt;
     this.compact(this.pulses);
     for (const pickup of this.pickups) {
@@ -1107,6 +1179,10 @@ export class MicroGame {
     if (!ctx) return;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     const world: World = {
+      dpr: this.dpr,
+      alpha: this.mode === "playing" && !this.paused && this.hitstop <= 0 ? this.acc / STEP : 0,
+      quality: this.quality,
+      hurt: this.hurtFlash,
       w: this.w,
       h: this.h,
       scroll: this.scroll,
@@ -1122,6 +1198,7 @@ export class MicroGame {
       floaters: this.floaters,
       pickups: this.pickups,
       pulses: this.pulses,
+      rings: this.rings,
       banner: this.banner,
       bannerT: this.bannerT,
       mode: this.mode,
