@@ -60,7 +60,7 @@ export function Microcosmos() {
 
         {hud.mode === "playing" && (
           <div className="pointer-events-none absolute inset-0 flex flex-col">
-            <header className="m-3 rounded-2xl border border-line bg-bg/80 px-3 py-2.5 backdrop-blur-sm">
+            <header className="glass m-3 rounded-2xl px-3 py-2.5">
               <div className="flex items-center justify-between gap-3">
                 <p className="font-display text-lg italic leading-none text-fg">Elytra</p>
                 <div className="flex items-center gap-2">
@@ -78,16 +78,16 @@ export function Microcosmos() {
               <div className="mt-2 flex items-end justify-between gap-3">
                 <div>
                   <p className="text-xs tracking-widest text-muted">PUNTOS</p>
-                  <p className="text-2xl font-semibold tabular-nums leading-none text-gold">{hud.score}</p>
+                  <p className="glow-gold text-2xl font-semibold tabular-nums leading-none text-gold">{hud.score}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs tracking-widest text-muted">OLEADA {hud.wave}</p>
                   <p className="text-sm tabular-nums text-fg">Récord {hud.hi}</p>
                 </div>
               </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-moss" aria-hidden="true">
+              <div className="hp-track mt-2 h-2 overflow-hidden rounded-full bg-moss" aria-hidden="true">
                 <div
-                  className={`h-full rounded-full ${low ? "bg-sting" : "bg-leaf"}`}
+                  className={`hp-fill h-full rounded-full ${low ? "hp-low" : ""}`}
                   style={{ width: `${hpPct}%` }}
                 />
               </div>
@@ -106,9 +106,10 @@ export function Microcosmos() {
             <footer className="safe-b pointer-events-none flex items-end justify-between gap-3 px-3">
               <button
                 type="button"
-                className={`pointer-events-auto min-h-12 min-w-28 rounded-full px-5 text-sm font-semibold ${
-                  hud.bombLeft > 0 ? "bg-moss text-muted" : "bg-gold text-bg"
+                className={`bomb-btn pointer-events-auto min-h-12 min-w-28 rounded-full px-5 text-sm font-semibold ${
+                  hud.bombLeft > 0 ? "text-muted" : "bomb-ready text-bg"
                 }`}
+                style={{ ["--charge" as string]: `${Math.round(hud.bombRatio * 100)}%` }}
                 onPointerDown={(e) => {
                   e.preventDefault();
                   gameRef.current?.bomb();
@@ -125,9 +126,10 @@ export function Microcosmos() {
 
         {hud.mode === "title" && (
           <div className="absolute inset-0 flex flex-col justify-end p-3">
-            <section className="rise rounded-2xl border border-line bg-surface px-5 py-6">
+            <section className="rise glass-card rounded-2xl px-5 py-6">
               <p className="text-xs tracking-widest text-gold">MICROCOSMOS</p>
-              <h1 className="mt-2 font-display text-5xl italic leading-none text-fg">Elytra</h1>
+              <h1 className="title-glow mt-2 font-display text-5xl italic leading-none text-fg">Elytra</h1>
+              <div className="title-rule mt-3" aria-hidden="true" />
               <p className="mt-3 text-sm leading-relaxed text-muted">
                 Disparo vertical. El escarabajo aguanta; el jardín, no.
               </p>
@@ -136,7 +138,7 @@ export function Microcosmos() {
               </p>
               <button
                 type="button"
-                className="mt-4 min-h-12 w-full rounded-full bg-gold px-6 text-base font-semibold text-bg"
+                className="btn-gold mt-4 min-h-12 w-full rounded-full px-6 text-base font-semibold text-bg"
                 onClick={() => gameRef.current?.play()}
               >
                 Jugar
@@ -150,11 +152,11 @@ export function Microcosmos() {
 
         {hud.mode === "over" && (
           <div className="absolute inset-0 flex flex-col justify-end p-3">
-            <section className="rise rounded-2xl border border-line bg-surface px-5 py-6">
+            <section className="rise glass-card rounded-2xl px-5 py-6">
               <p className="text-xs tracking-widest text-muted">ELYTRA</p>
               <h2 className="mt-1 font-display text-4xl italic text-fg">Fin de partida</h2>
               <p className="mt-4 text-xs tracking-widest text-muted">PUNTOS</p>
-              <p className="text-4xl font-semibold tabular-nums text-gold">{hud.score}</p>
+              <p className="glow-gold text-4xl font-semibold tabular-nums text-gold">{hud.score}</p>
               <p className="mt-2 text-sm text-fg">
                 Oleada {hud.wave}
                 <span className="text-muted"> · récord {hud.hi}</span>
@@ -162,7 +164,7 @@ export function Microcosmos() {
               {hud.newRecord && <p className="mt-2 text-sm text-gold">Nuevo récord.</p>}
               <button
                 type="button"
-                className="mt-4 min-h-12 w-full rounded-full bg-gold px-6 text-base font-semibold text-bg"
+                className="btn-gold mt-4 min-h-12 w-full rounded-full px-6 text-base font-semibold text-bg"
                 onClick={() => gameRef.current?.play()}
               >
                 Reintentar
@@ -173,12 +175,12 @@ export function Microcosmos() {
 
         {hud.paused && hud.mode === "playing" && (
           <div className="absolute inset-0 flex items-center justify-center bg-bg-deep/55 p-6">
-            <section className="w-full max-w-xs rounded-2xl border border-line bg-surface px-5 py-5 text-center">
+            <section className="glass-card w-full max-w-xs rounded-2xl px-5 py-5 text-center">
               <h2 className="font-display text-3xl italic">Pausa</h2>
               <p className="mt-2 text-sm text-muted">P para continuar.</p>
               <button
                 type="button"
-                className="mt-4 inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gold px-6 font-semibold text-bg"
+                className="btn-gold mt-4 inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-6 font-semibold text-bg"
                 onClick={() => gameRef.current?.togglePause()}
               >
                 <Play className="size-4" />
@@ -215,7 +217,7 @@ function IconButton({
     <button
       type="button"
       aria-label={label}
-      className="pointer-events-auto inline-flex size-11 items-center justify-center rounded-full border border-line bg-bg/80 text-fg backdrop-blur-sm"
+      className="icon-btn pointer-events-auto inline-flex size-11 items-center justify-center rounded-full text-fg"
       onClick={onClick}
     >
       {children}
