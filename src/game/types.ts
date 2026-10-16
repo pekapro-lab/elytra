@@ -29,6 +29,9 @@ export type PickupKind = "heal" | "abanico" | "pulso";
 export interface Player {
   x: number;
   y: number;
+  /** Posición del paso anterior (solo para interpolar el dibujo). */
+  px?: number;
+  py?: number;
   r: number;
   hp: number;
   maxHp: number;
@@ -42,6 +45,10 @@ export interface Enemy {
   kind: Kind;
   x: number;
   y: number;
+  px?: number;
+  py?: number;
+  /** Destello visual al recibir daño (0..1). */
+  hit?: number;
   vx: number;
   vy: number;
   hp: number;
@@ -57,6 +64,8 @@ export interface Enemy {
 export interface Shot {
   x: number;
   y: number;
+  px?: number;
+  py?: number;
   vx: number;
   vy: number;
   r: number;
@@ -91,6 +100,15 @@ export interface Pickup {
   y: number;
   vy: number;
   life: number;
+}
+
+export interface Ring {
+  x: number;
+  y: number;
+  life: number;
+  max: number;
+  size: number;
+  tone: Tone;
 }
 
 export interface Pulse {
