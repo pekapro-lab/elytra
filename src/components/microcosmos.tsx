@@ -60,7 +60,7 @@ export function Microcosmos() {
 
         {hud.mode === "playing" && (
           <div className="pointer-events-none absolute inset-0 flex flex-col">
-            <header className="glass m-3 rounded-2xl px-3 py-2.5">
+            <header className="glass-hud m-3 rounded-2xl px-3 py-2.5">
               <div className="flex items-center justify-between gap-3">
                 <p className="font-display text-lg italic leading-none text-fg">Elytra</p>
                 <div className="flex items-center gap-2">
